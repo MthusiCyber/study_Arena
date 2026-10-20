@@ -47,21 +47,48 @@ struct SignUpView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
                     // Header Title
-                    VStack(spacing: 6) {
+                    VStack(spacing: 8) {
                         Image("AppLogo")
                             .resizable()
-                            .frame(width: 600, height: 400)
-                            .padding(.bottom, 10)
+                            .scaledToFit()
+                            .frame(width: 200, height: 200)
+                            .padding(18)
+                            .background(Color.goldGlow)
+                            .clipShape(Circle())
+                            .shadow(
+                                color: Color.black.opacity(0.15),
+                                radius: 10,
+                                y: 5
+                            )
+                            .padding(.bottom, 8)
+
+                        Text("Welcome To")
+                            .font(.system(size: 65, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.text)
+                            .multilineTextAlignment(.center)
+                        HStack(spacing: 8) {
+                            Text("STUDY")
+                                .foregroundStyle(.white)
+
+                            Text("ARENA")
+                                .foregroundStyle(Color.appGold)
+                        }
+                        .font(.system(size: 100, weight: .black, design: .rounded))
+                        .kerning(-1)
+
+
                         Text("Create Account")
                             .font(.system(size: 26, weight: .bold))
-                            .foregroundColor(.text)
-                        
+                            .foregroundStyle(Color.text)
+
                         Text("Please fill in the details below to sign up.")
                             .font(.system(size: 13))
-                            .foregroundColor(.secondaryText)
+                            .foregroundStyle(Color.secondaryText)
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.top, 30)
                     .padding(.bottom, 6)
+
 
                     // Professional Role Picker Section
                     VStack(alignment: .leading, spacing: 8) {
@@ -187,7 +214,7 @@ struct RolePickerButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 64)
             .background(
-                isSelected ? Color.appBlue : Color.grayBlue
+                isSelected ? Color.appBlue : Color.darkBlue
             )
             .cornerRadius(12)
             .overlay(
@@ -230,7 +257,7 @@ struct CustomInputField: View {
             }
             .padding(.horizontal, 14)
             .frame(height: 50)
-            .background(Color.appBlue)
+            .background(Color.goldGlow)
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -286,7 +313,7 @@ struct CustomSecureField: View {
             }
             .padding(.horizontal, 14)
             .frame(height: 50)
-            .background(Color.appBlue)
+            .background(Color.blueGlow)
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)

@@ -75,9 +75,13 @@ struct WelcomePage: View {
                         }
                         .padding(.horizontal, 40)
 
-                        Text("Sign in or create an account to begin practising")
-                            .font(.footnote)
-                            .foregroundStyle(Color.secondaryText)
+                        HStack{
+                            NavigationLink(destination: SignInView()) {
+                                Text("Already have an account? Tap here to login ")
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.text)
+                            }
+                        }
                     }
                     .padding(.bottom, 16)
                 }
