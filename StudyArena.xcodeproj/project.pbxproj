@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		49153933308A3B0700F01BB7 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 49153932308A3B0700F01BB7 /* Auth */; };
+		49153935308A3B0700F01BB7 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 49153934308A3B0700F01BB7 /* Functions */; };
+		49153937308A3B0700F01BB7 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 49153936308A3B0700F01BB7 /* PostgREST */; };
+		49153939308A3B0700F01BB7 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 49153938308A3B0700F01BB7 /* Realtime */; };
+		4915393B308A3B0700F01BB7 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 4915393A308A3B0700F01BB7 /* Storage */; };
+		4915393D308A3B0700F01BB7 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 4915393C308A3B0700F01BB7 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		491538F13082698100F01BB7 /* StudyArena.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StudyArena.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +32,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				49153937308A3B0700F01BB7 /* PostgREST in Frameworks */,
+				49153935308A3B0700F01BB7 /* Functions in Frameworks */,
+				4915393D308A3B0700F01BB7 /* Supabase in Frameworks */,
+				49153933308A3B0700F01BB7 /* Auth in Frameworks */,
+				4915393B308A3B0700F01BB7 /* Storage in Frameworks */,
+				49153939308A3B0700F01BB7 /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +80,12 @@
 			);
 			name = StudyArena;
 			packageProductDependencies = (
+				49153932308A3B0700F01BB7 /* Auth */,
+				49153934308A3B0700F01BB7 /* Functions */,
+				49153936308A3B0700F01BB7 /* PostgREST */,
+				49153938308A3B0700F01BB7 /* Realtime */,
+				4915393A308A3B0700F01BB7 /* Storage */,
+				4915393C308A3B0700F01BB7 /* Supabase */,
 			);
 			productName = StudyArena;
 			productReference = 491538F13082698100F01BB7 /* StudyArena.app */;
@@ -94,6 +115,9 @@
 			);
 			mainGroup = 491538E83082698100F01BB7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 491538F23082698100F01BB7 /* Products */;
 			projectDirPath = "";
@@ -328,6 +352,50 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		49153932308A3B0700F01BB7 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		49153934308A3B0700F01BB7 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		49153936308A3B0700F01BB7 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		49153938308A3B0700F01BB7 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		4915393A308A3B0700F01BB7 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		4915393C308A3B0700F01BB7 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49153931308A3B0700F01BB7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 491538E93082698100F01BB7 /* Project object */;
 }
