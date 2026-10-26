@@ -159,6 +159,12 @@ struct SignUpView: View {
                         }
                         .font(.footnote)
                         .multilineTextAlignment(.leading)
+                        .sheet(isPresented: $showingTerms) {
+                            TermsOfServiceView()
+                        }
+                        .sheet(isPresented: $showingPrivacy) {
+                            PrivacyPolicyView()
+                        }
                         
                         // Submit Button
                         Button(action: {
