@@ -498,4 +498,5 @@ struct CustomSecureField: View {
 
 #Preview {
     SignUpView()
+        .environment(SupabaseService.shared)
 }
