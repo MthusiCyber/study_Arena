@@ -26,7 +26,8 @@ final class SupabaseService {
               let supabaseKey = dict["SUPABASE_KEY"] as? String else {
             fatalError("Secrets.plist file not found or missing required keys (SUPABASE_URL, SUPABASE_KEY).")
         }
-         
+        // Print out the URL to inspect it in your console
+        print("🔍 Loaded SUPABASE_URL: '\(supabaseURL)'")
         guard let url = URL(string: supabaseURL) else {
             fatalError("Invalid Supabase URL format in Secrets.plist")
         }
@@ -40,5 +41,17 @@ final class SupabaseService {
                 )
             )
         )
+    }
+    func signUp(email: String, password: String, name: String, role: String) async throws{
+        let authResponse = try await client.auth.signUp(email: email, password: password, data: ["full_name": .string(name), "role": .string(role)])
+        let userId = authResponse.user.id
+        let newProfile = SupabaseProfile(id: userId, email: email, full_name: name, role: role, school_id: nil, created_at: Date())
+        do {
+            _ = try await client.from("profiles")
+                .upsert(newProfile)
+                .execute()
+        } catch {
+            print("Profile upsert warning: \(error.localizedDescription)")
+        }
     }
 }

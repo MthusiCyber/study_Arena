@@ -10,8 +10,10 @@ import SwiftUI
 @main
 struct StudyArenaApp: App {
     var body: some Scene {
+        @State  var supabaseService = SupabaseService.shared
         WindowGroup {
             ContentView()
+                .environment(supabaseService)
         }
     }
 }

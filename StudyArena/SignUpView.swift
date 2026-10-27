@@ -7,6 +7,7 @@
 import SwiftUI
 
 struct SignUpView: View {
+    @Environment(SupabaseService.self) var supabaseService
     @State private var username = ""
     @State private var email = ""
     @State private var password = ""
@@ -17,9 +18,14 @@ struct SignUpView: View {
     @State private var isPasswordVisible = false
     @State private var isConfirmPasswordVisible = false
     
+    // Alert & Loading States
+    @State private var showAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    @State private var isLoading = false
+    
     // Role selection state
     @State private var selectedRole: AppRole = .student
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -35,7 +41,6 @@ struct SignUpView: View {
                     Color.goldGlow
                         .ignoresSafeArea()
                 }
-                
                 
                 // Scrollable Content
                 ScrollView(showsIndicators: false) {
@@ -61,7 +66,6 @@ struct SignUpView: View {
                             .font(.system(size: 100, weight: .black, design: .rounded))
                             .kerning(-1)
                             
-                            
                             Text("Create Account")
                                 .font(.system(size: 26, weight: .bold))
                                 .foregroundStyle(Color.text)
@@ -73,7 +77,6 @@ struct SignUpView: View {
                         }
                         .padding(.top, 30)
                         .padding(.bottom, 6)
-                        
                         
                         // Professional Role Picker Section
                         VStack(alignment: .leading, spacing: 8) {
@@ -116,7 +119,7 @@ struct SignUpView: View {
                             CustomSecureField(
                                 icon: "lock",
                                 title: "Password",
-                                placeholder: "At least 8 characters",
+                                placeholder: "At least 8 chars, upper, lower, number, symbol",
                                 text: $password,
                                 isPasswordVisible: $isPasswordVisible
                             )
@@ -129,6 +132,8 @@ struct SignUpView: View {
                                 isPasswordVisible: $isConfirmPasswordVisible
                             )
                         }
+                        
+                        // Terms and Conditions Agreement
                         HStack(alignment: .top, spacing: 4) {
                             Toggle("", isOn: $agreedToTerms)
                                 .labelsHidden()
@@ -155,7 +160,6 @@ struct SignUpView: View {
                             
                             Text("for how we handle your data.")
                                 .foregroundStyle(Color.text)
-                            
                         }
                         .font(.footnote)
                         .multilineTextAlignment(.leading)
@@ -167,23 +171,26 @@ struct SignUpView: View {
                         }
                         
                         // Submit Button
-                        Button(action: {
-                            // Handle sign up action here
-                        }) {
-                            Text("Sign Up")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(Color.darkBlue)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(Color.buttonGradient)
-                                .clipShape(
-                                    RoundedRectangle(cornerRadius: 16)
-                                )
-                                .shadow(
-                                    color: Color.appDarkGold.opacity(0.35),
-                                    radius: 16,
-                                    y: 6
-                                )
+                        Button(action: handleContinue) {
+                            HStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .tint(Color.darkBlue)
+                                } else {
+                                    Text("Sign Up")
+                                        .font(.system(size: 17, weight: .bold))
+                                        .foregroundStyle(Color.darkBlue)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color.buttonGradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(
+                                color: Color.appDarkGold.opacity(0.35),
+                                radius: 16,
+                                y: 6
+                            )
                         }
                         .padding(.top, 6)
                         
@@ -193,7 +200,131 @@ struct SignUpView: View {
                     .padding(.bottom, 30)
                 }
             }
+            // Attached alert modifier so warnings actually display on screen
+            .alert(alertTitle, isPresented: $showAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(alertMessage)
+            }
         }
+    }
+    
+    // MARK: - Validation & Actions
+    
+    private func showWarning(_ title: String, _ message: String) {
+        alertTitle = title
+        alertMessage = message
+        showAlert = true
+    }
+    
+    private func handleContinue() {
+        let name = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !name.isEmpty else {
+            showWarning("Username Missing", "Please enter your username.")
+            return
+        }
+        
+        guard !cleanEmail.isEmpty else {
+            showWarning("Email Missing", "Please enter your email address.")
+            return
+        }
+        
+        guard isValidEmail(cleanEmail) else {
+            showWarning("Invalid Email", "That doesn't look like a valid email address. Please use the format name@example.com.")
+            return
+        }
+        
+        guard !password.isEmpty else {
+            showWarning("Password Missing", "Password is required.")
+            return
+        }
+        
+        // EDITED: Updated validation check to reflect complex password rules
+        guard isPasswordValid else {
+            showWarning("Weak Password", "Password must have at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character.")
+            return
+        }
+        
+        guard !confirmPassword.isEmpty else {
+            showWarning("Confirm Your Password", "Please re-enter your password to confirm it.")
+            return
+        }
+        
+        // EDITED: Updated warning message to match exact user requirement
+        guard doPasswordsMatch else {
+            showWarning("Passwords Do Not Match", "Passwords do not match. Please try again.")
+            return
+        }
+        
+        guard agreedToTerms else {
+            showWarning("Terms Required", "You must agree to the Terms of Service and Privacy Policy to continue.")
+            return
+        }
+        
+        // Perform successful sign up actions here
+        executeSignUp()
+    }
+    
+    private func executeSignUp() {
+        isLoading = true
+        
+        // Simulate local registration process (passwords are handled securely via SecureField and never logged/stored in plain text)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isLoading = false
+            // Add navigation or success handling here
+            createAccount()
+        }
+    }
+    // MARK: - LINKS SUPABASE AND THE UI
+    @MainActor
+    private func createAccount() {
+        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanName = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        let roleValue = selectedRole.databaseRoleValue
+        
+        Task {
+            isLoading = true
+            defer { isLoading = false }
+            
+            do {
+                try await supabaseService.signUp(
+                    email: cleanEmail,
+                    password: password,
+                    name: cleanName,
+                    role: roleValue
+                )
+                
+                // Navigate to role-specific onboarding
+                
+            } catch {
+                showWarning("Sign Up Failed", error.localizedDescription)
+            }
+        }
+    }
+    private func isValidEmail(_ email: String) -> Bool {
+        let pattern = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: email)
+    }
+    
+    // EDITED: Updated password validation computed property to enforce 8+ chars, upper, lower, number, and special character via regex
+    private var isPasswordValid: Bool {
+        let passwordRegex = "^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$"
+        return NSPredicate(format: "SELF MATCHES %@", passwordRegex).evaluate(with: password)
+    }
+    
+    private var doPasswordsMatch: Bool {
+        password == confirmPassword
+    }
+    
+    private var canContinue: Bool {
+        !username.trimmingCharacters(in: .whitespaces).isEmpty &&
+        isValidEmail(email) &&
+        isPasswordValid &&
+        doPasswordsMatch &&
+        agreedToTerms &&
+        !isLoading
     }
 }
 
@@ -201,7 +332,7 @@ struct SignUpView: View {
 enum AppRole: String, CaseIterable, Identifiable {
     case student = "Student"
     case teacher = "Teacher"
-    case head = "School Head"
+    case schoolHead = "School Head"
     
     var id: String { rawValue }
     
@@ -209,10 +340,21 @@ enum AppRole: String, CaseIterable, Identifiable {
         switch self {
         case .student: return "graduationcap.fill"
         case .teacher: return "book.closed.fill"
-        case .head: return "person.badge.shield.checkmark.fill"
+        case .schoolHead: return "person.badge.shield.checkmark.fill"
+        }
+    }
+    var databaseRoleValue: String {
+        switch self {
+        case .student:
+            return "student"
+        case .teacher:
+            return "teacher"
+        case .schoolHead:
+            return "school_head" // Ensure this matches your Postgres check constraint ('school_head' or 'head')
         }
     }
 }
+
 
 // MARK: - Role Picker Button Component
 struct RolePickerButton: View {
@@ -318,11 +460,16 @@ struct CustomSecureField: View {
                         .foregroundColor(.text)
                         .font(.system(size: 14))
                         .focused($isFocused)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
                 } else {
+                    // EDITED: Utilizes SecureField to ensure password values are never logged or stored in plain text on screen
                     SecureField("", text: $text, prompt: Text(placeholder).foregroundColor(.secondaryText))
                         .foregroundColor(.text)
                         .font(.system(size: 14))
                         .focused($isFocused)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
                 }
                 
                 Button(action: {
