@@ -222,12 +222,28 @@ struct SignUpView: View {
                 )
             }
             .navigationDestination(isPresented: $showTeacherOnboarding) {
-                // Replace with your TeacherOnboardingView if available
-                Text("Teacher Onboarding")
+                TeacherOnboardingView(
+                    teacherName: supabaseService.currentUser?.full_name ?? "Teacher",
+                    teacherEmail: supabaseService.currentUser?.email ?? "",
+                    onboardingComplete: {
+                        showTeacherOnboarding = false
+                        Task {
+                            await supabaseService.checkAuthState()
+                        }
+                    }
+                )
             }
             .navigationDestination(isPresented: $showStudentOnboarding) {
-                // Replace with your StudentOnboardingView if available
-                Text("Student Onboarding")
+                StudentOnboardingView(
+                    studentName: supabaseService.currentUser?.full_name ?? "Student",
+                    studentEmail: supabaseService.currentUser?.email ?? "",
+                    onboardingComplete: {
+                        showStudentOnboarding = false
+                        Task {
+                            await supabaseService.checkAuthState()
+                        }
+                    }
+                )
             }
         }
     }

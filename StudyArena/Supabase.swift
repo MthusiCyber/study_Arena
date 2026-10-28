@@ -128,8 +128,19 @@ final class SupabaseService {
         currentUser = try await loadUserProfile(userId: userId)
     }
 
-    func updateUserProfile(userId: UUID, schoolId: UUID) async throws {
-        try await updateUserSchool(userId: userId, schoolId: schoolId)
+    // Updated profile update to also support saving the student academic level (preventing null level values)
+    func updateUserProfile(userId: UUID, schoolId: UUID, level: String? = nil) async throws {
+        var updateData: [String: AnyJSON] = ["school_id": .string(schoolId.uuidString)]
+        if let level = level {
+            updateData["level"] = .string(level)
+        }
+        
+        _ = try await client.from("profiles")
+            .update(updateData)
+            .eq("id", value: userId)
+            .execute()
+
+        currentUser = try await loadUserProfile(userId: userId)
     }
 
     // MARK: - School Operations
@@ -182,21 +193,30 @@ final class SupabaseService {
         return school
     }
 
-    // MARK: - Class Operations (Corrected)
+    // MARK: - Class Operations (Updated with examLevel support)
 
-    func createClass(schoolId: UUID, name: String) async throws -> UUID {
+    func createClass(schoolId: UUID, name: String, examLevel: String) async throws -> UUID {
         let classId = UUID()
-        let schoolClass = SupabaseClass(
-            id: classId,
-            school_id: schoolId,
-            name: name
-        )
+        
+        let classData: [String: AnyJSON] = [
+            "id": .string(classId.uuidString),
+            "school_id": .string(schoolId.uuidString),
+            "name": .string(name),
+            "exam_level": .string(examLevel)
+        ]
 
         try await client.from("classes")
-            .insert(schoolClass)
+            .insert(classData)
             .execute()
 
         return classId
+    }
+
+    // Overload for backward compatibility if called without examLevel
+    func createClass(schoolId: UUID, name: String) async throws -> UUID {
+        let lowerName = name.lowercased()
+        let inferredLevel = (lowerName.contains("lower 6") || lowerName.contains("upper 6") || lowerName.contains("form 5") || lowerName.contains("form 6")) ? "A-Level" : "O-Level"
+        return try await createClass(schoolId: schoolId, name: name, examLevel: inferredLevel)
     }
 
     func loadClasses(schoolId: UUID) async throws -> [SupabaseClass] {

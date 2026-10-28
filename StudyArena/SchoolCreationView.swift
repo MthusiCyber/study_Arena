@@ -13,12 +13,22 @@ struct SchoolCreationView: View {
     let headEmail: String
     @Binding var schoolDraft: SchoolDraft
     @State private var newClassName = ""
+    @State private var selectedLevel = "Form 3"
     @State private var showSubjectPicker = false
+    
+    // Toast / Banner Notification States
+    @State private var bannerMessage: String?
+    @State private var isBannerError = false
     
     @State private var isLoading = false
     @State private var errorMessage: String?
     
     @Environment(\.dismiss) private var dismiss
+
+    // Restricted strictly to Form 3 through Form 6 (O-Level & A-Level)
+    private let availableLevels = [
+        "Form 3", "Form 4", "Lower 6", "Upper 6"
+    ]
 
     var body: some View {
         NavigationStack {
@@ -32,70 +42,110 @@ struct SchoolCreationView: View {
                 Color.goldGlow
                     .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        header
-                            .padding(10)
-                        
-                        VStack(spacing: 20) {
-                            CustomInputField(icon: "building.columns", title: "School Name", placeholder: "e.g. St. Michael's School", text: $schoolDraft.name)
-                                .frame(width: 780)
+                VStack(spacing: 0) {
+                    // Toast Notification Banner
+                    if let bannerMessage {
+                        HStack(spacing: 8) {
+                            Image(systemName: isBannerError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                                .foregroundStyle(isBannerError ? Color.red : Color.green)
                             
-                            CustomInputField(icon: "number.square", title: "School Code", placeholder: "for example: MS-2026", text: $schoolDraft.code)
-                                .frame(width: 780)
+                            Text(bannerMessage)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
                             
-                            CustomInputField(icon: "mappin.and.ellipse", title: "School Address", placeholder: "Enter school address", text: $schoolDraft.address)
-                                .frame(width: 780)
+                            Spacer()
                         }
-                        
-                        classesSection
-                            .frame(width: 780)
-                        
-                        subjectsSection
-                            .frame(width: 780)
-                        
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .font(.footnote)
-                                .foregroundColor(.red)
-                                .frame(width: 780, alignment: .leading)
-                        }
-                        
-                        Button(action: {
-                            Task {
-                                await createSchool()
-                            }
-                        }) {
-                            HStack {
-                                if isLoading {
-                                    ProgressView()
-                                        .tint(Color.darkBlue)
-                                } else {
-                                    Text("Create School")
-                                        .font(.system(size: 17, weight: .bold))
-                                        .foregroundStyle(Color.darkBlue)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Color.buttonGradient)
-                            .clipShape(
-                                RoundedRectangle(cornerRadius: 16)
-                            )
-                            .shadow(
-                                color: Color.appDarkGold.opacity(0.35),
-                                radius: 16,
-                                y: 6
-                            )
-                        }
-                        .disabled(isLoading)
-                        .padding(.top, 6)
-                        .frame(width: 780)
-                        
-                        Spacer(minLength: 30)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(isBannerError ? Color.red.opacity(0.25) : Color.green.opacity(0.25))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isBannerError ? Color.red.opacity(0.5) : Color.green.opacity(0.5), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
-                    .padding(.bottom, 40)
+
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            header
+                                .padding(10)
+                            
+                            VStack(spacing: 20) {
+                                CustomInputField(icon: "building.columns", title: "School Name", placeholder: "e.g. St. Michael's School", text: $schoolDraft.name)
+                                    .frame(width: 780)
+                                
+                                CustomInputField(icon: "number.square", title: "School Code", placeholder: "for example: MS-2026", text: $schoolDraft.code)
+                                    .frame(width: 780)
+                                
+                                CustomInputField(icon: "mappin.and.ellipse", title: "School Address", placeholder: "Enter school address", text: $schoolDraft.address)
+                                    .frame(width: 780)
+                            }
+                            
+                            classesSection
+                                .frame(width: 780)
+                            
+                            subjectsSection
+                                .frame(width: 780)
+                            
+                            if let errorMessage {
+                                Text(errorMessage)
+                                    .font(.footnote)
+                                    .foregroundColor(.red)
+                                    .frame(width: 780, alignment: .leading)
+                            }
+                            
+                            Button(action: {
+                                Task {
+                                    await createSchool()
+                                }
+                            }) {
+                                HStack {
+                                    if isLoading {
+                                        ProgressView()
+                                            .tint(Color.darkBlue)
+                                    } else {
+                                        Text("Create School")
+                                            .font(.system(size: 17, weight: .bold))
+                                            .foregroundStyle(Color.darkBlue)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(Color.buttonGradient)
+                                .clipShape(
+                                    RoundedRectangle(cornerRadius: 16)
+                                )
+                                .shadow(
+                                    color: Color.appDarkGold.opacity(0.35),
+                                    radius: 16,
+                                    y: 6
+                                )
+                            }
+                            .disabled(isLoading)
+                            .padding(.top, 6)
+                            .frame(width: 780)
+                            
+                            Spacer(minLength: 30)
+                        }
+                        .padding(.bottom, 40)
+                    }
                 }
+            }
+        }
+    }
+    
+    private func showNotification(message: String, isError: Bool) {
+        withAnimation(.spring()) {
+            bannerMessage = message
+            isBannerError = isError
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation(.easeInOut) {
+                bannerMessage = nil
             }
         }
     }
@@ -108,14 +158,24 @@ struct SchoolCreationView: View {
     
     private func addClass() {
         let name = newClassName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        let fullName = name.isEmpty ? selectedLevel : "\(selectedLevel) (\(name))"
 
         let alreadyExists = schoolDraft.classes.contains {
-            $0.name.caseInsensitiveCompare(name) == .orderedSame
+            $0.name.caseInsensitiveCompare(fullName) == .orderedSame
         }
-        guard !alreadyExists else { return }
+        
+        if alreadyExists {
+            showNotification(message: "'\(fullName)' has already been added.", isError: true)
+            return
+        }
 
-        schoolDraft.classes.append(ClassOption(name: name))
+        schoolDraft.classes.append(ClassOption(name: fullName))
+        
+        let isALevel = (selectedLevel == "Lower 6" || selectedLevel == "Upper 6")
+        let examLevelCategory = isALevel ? "A-Level" : "O-Level"
+        
+        showNotification(message: "'\(fullName)' (\(examLevelCategory)) successfully added!", isError: false)
+        
         newClassName = ""
     }
 
@@ -154,21 +214,41 @@ struct SchoolCreationView: View {
     private var classesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Classes offered")
+                Text("Classes Offered (Form 3 – Form 6)")
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.white)
 
-                Text("Add the classes available at your school.")
+                Text("Pick a level and enter optional stream names (e.g., Form 3 East). Form 3-4 are O-Level, Form 5-6 are A-Level.")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.72))
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    // Level Picker Dropdown
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Level")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.appGold)
+
+                        Picker("Select Level", selection: $selectedLevel) {
+                            ForEach(availableLevels, id: \.self) { level in
+                                Text(level).tag(level)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(Color.appGold)
+                        .padding(.horizontal, 12)
+                        .frame(height: 48)
+                        .background(Color.white.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+
+                    // Optional Stream Name
                     CustomInputField(
                         icon: "book.closed",
-                        title: "Class name",
-                        placeholder: "e.g. Form 1",
+                        title: "Stream (Optional)",
+                        placeholder: "e.g. A or East",
                         text: $newClassName
                     )
                     .frame(maxWidth: .infinity)
@@ -180,14 +260,11 @@ struct SchoolCreationView: View {
                             .foregroundStyle(.white)
                             .frame(width: 48, height: 48)
                             .background(
-                                newClassName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? Color.appGold.opacity(0.45)
-                                    : Color.appDarkGold,
+                                Color.appDarkGold,
                                 in: RoundedRectangle(cornerRadius: 14)
                             )
                     }
                     .buttonStyle(.plain)
-                    .disabled(newClassName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityLabel("Add class")
                 }
             }
@@ -199,7 +276,7 @@ struct SchoolCreationView: View {
                     .padding(.vertical, 4)
             } else {
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 125), spacing: 8)],
+                    columns: [GridItem(.adaptive(minimum: 140), spacing: 8)],
                     alignment: .leading,
                     spacing: 8
                 ) {
@@ -329,9 +406,13 @@ struct SchoolCreationView: View {
             try await supabaseService.updateUserProfile(userId: headId, schoolId: schoolId)
 
             for classItem in schoolDraft.classes {
+                let lowerName = classItem.name.lowercased()
+                let examLevel = (lowerName.contains("lower 6") || lowerName.contains("upper 6") || lowerName.contains("form 5") || lowerName.contains("form 6")) ? "A-Level" : "O-Level"
+
                 _ = try await supabaseService.createClass(
                     schoolId: schoolId,
-                    name: classItem.name
+                    name: classItem.name,
+                    examLevel: examLevel
                 )
             }
 
@@ -501,10 +582,15 @@ struct ChooseSchoolSubjectsSheet: View {
         }
     }
 }
+
 // MARK: - SwiftUI Canvas Preview
 
 #Preview {
-    @Previewable @State var sampleDraft = SchoolDraft(
+    SchoolCreationPreviewWrapper()
+}
+
+struct SchoolCreationPreviewWrapper: View {
+    @State private var sampleDraft = SchoolDraft(
         name: "St. Michael's High School",
         code: "MS-2026",
         address: "123 Education Avenue, Harare",
@@ -514,16 +600,18 @@ struct ChooseSchoolSubjectsSheet: View {
             SubjectOption(name: "English")
         ],
         classes: [
-            ClassOption(name: "Form 1"),
-            ClassOption(name: "Form 2"),
-            ClassOption(name: "Form 3")
+            ClassOption(name: "Form 3"),
+            ClassOption(name: "Form 4"),
+            ClassOption(name: "Lower 6")
         ]
     )
 
-    return SchoolCreationView(
-        headName: "Dr. Mthusi",
-        headEmail: "mthusi@studyarena.co.zw",
-        schoolDraft: $sampleDraft
-    )
-    .environment(SupabaseService.shared)
+    var body: some View {
+        SchoolCreationView(
+            headName: "Dr. Mthusi",
+            headEmail: "mthusi@studyarena.co.zw",
+            schoolDraft: $sampleDraft
+        )
+        .environment(SupabaseService.shared)
+    }
 }
