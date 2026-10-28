@@ -1,11 +1,24 @@
+//
+//  SchoolCreationView.swift
+//  StudyArena
+//
+//  Created by Mthusi on 5/10/2026.
+//
+
 import SwiftUI
 
 struct SchoolCreationView: View {
+    @Environment(SupabaseService.self) var supabaseService
     let headName: String
     let headEmail: String
     @Binding var schoolDraft: SchoolDraft
     @State private var newClassName = ""
     @State private var showSubjectPicker = false
+    
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -41,26 +54,44 @@ struct SchoolCreationView: View {
                         subjectsSection
                             .frame(width: 780)
                         
-                        Button(action: {
-                            // Handle sign up action here
-                        }) {
-                            Text("Create School")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(Color.darkBlue)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(Color.buttonGradient)
-                                .clipShape(
-                                    RoundedRectangle(cornerRadius: 16)
-                                )
-                                .shadow(
-                                    color: Color.appDarkGold.opacity(0.35),
-                                    radius: 16,
-                                    y: 6
-                                )
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .frame(width: 780, alignment: .leading)
                         }
+                        
+                        Button(action: {
+                            Task {
+                                await createSchool()
+                            }
+                        }) {
+                            HStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .tint(Color.darkBlue)
+                                } else {
+                                    Text("Create School")
+                                        .font(.system(size: 17, weight: .bold))
+                                        .foregroundStyle(Color.darkBlue)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color.buttonGradient)
+                            .clipShape(
+                                RoundedRectangle(cornerRadius: 16)
+                            )
+                            .shadow(
+                                color: Color.appDarkGold.opacity(0.35),
+                                radius: 16,
+                                y: 6
+                            )
+                        }
+                        .disabled(isLoading)
                         .padding(.top, 6)
                         .frame(width: 780)
+                        
                         Spacer(minLength: 30)
                     }
                     .padding(.bottom, 40)
@@ -253,29 +284,72 @@ struct SchoolCreationView: View {
                 .multilineTextAlignment(.center)
         }
     }
-}
 
-// MARK: - Simplified Preview
+    @MainActor
+    private func createSchool() async {
+        let schoolName = schoolDraft.name.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        let schoolCode = schoolDraft.code.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
 
-#Preview {
-    struct PreviewWrapper: View {
-        @State private var draft = SchoolDraft(
-            name: "St. Michael's",
-            code: "MS-2026",
-            address: "Harare",
-            subjects: [],
-            classes: [ClassOption(name: "Form 1")]
-        )
+        guard !schoolName.isEmpty else {
+            errorMessage = "Please enter the school name."
+            return
+        }
 
-        var body: some View {
-            SchoolCreationView(
-                headName: "Mthusi",
-                headEmail: "mthusi@studyarena.co.zw",
-                schoolDraft: $draft
+        guard !schoolCode.isEmpty else {
+            errorMessage = "Please enter the school code."
+            return
+        }
+
+        guard !schoolDraft.subjects.isEmpty else {
+            errorMessage = "Please add at least one subject."
+            return
+        }
+
+        guard !schoolDraft.classes.isEmpty else {
+            errorMessage = "Please add at least one class."
+            return
+        }
+
+        guard let headId = supabaseService.currentUser?.id else {
+            errorMessage = "Please sign in again."
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let schoolId = try await supabaseService.createSchool(
+                name: schoolName,
+                location: schoolDraft.address,
+                code: schoolCode,
+                createdBy: headId
             )
+
+            try await supabaseService.updateUserProfile(userId: headId, schoolId: schoolId)
+
+            for classItem in schoolDraft.classes {
+                _ = try await supabaseService.createClass(
+                    schoolId: schoolId,
+                    name: classItem.name
+                )
+            }
+
+            for subjectItem in schoolDraft.subjects {
+                _ = try await supabaseService.createSubject(
+                    schoolId: schoolId,
+                    name: subjectItem.name
+                )
+            }
+
+            await supabaseService.checkAuthState()
+            errorMessage = nil
+            dismiss()
+        } catch {
+            print("DEBUG: Create school error - \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
         }
     }
-    return PreviewWrapper()
 }
 
 // MARK: - Choose School Subjects Sheet
@@ -293,20 +367,15 @@ struct ChooseSchoolSubjectsSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background color matching your app theme
                 Color.background
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
-                        
-                        // Selected Subjects Section Container
                         selectedSection
                         
-                        // Categories and Subjects
                         ForEach(ZimsecSubjects.categories) { category in
                             VStack(alignment: .leading, spacing: 8) {
-                                // Category Header
                                 HStack(spacing: 8) {
                                     Image(systemName: category.icon)
                                         .font(.subheadline)
@@ -316,7 +385,6 @@ struct ChooseSchoolSubjectsSheet: View {
                                 .foregroundStyle(Color.appGold)
                                 .padding(.horizontal, 4)
 
-                                // Subjects List for this Category
                                 VStack(spacing: 4) {
                                     ForEach(category.subjects.sorted(), id: \.self) { name in
                                         subjectRow(name)
@@ -366,7 +434,6 @@ struct ChooseSchoolSubjectsSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
             } else {
-                // Flow/Grid style display for selected chips
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 8)], spacing: 8) {
                     ForEach(selectedNames.sorted(), id: \.self) { name in
                         HStack(spacing: 6) {
@@ -433,4 +500,30 @@ struct ChooseSchoolSubjectsSheet: View {
             subjects.append(SubjectOption(name: name))
         }
     }
+}
+// MARK: - SwiftUI Canvas Preview
+
+#Preview {
+    @Previewable @State var sampleDraft = SchoolDraft(
+        name: "St. Michael's High School",
+        code: "MS-2026",
+        address: "123 Education Avenue, Harare",
+        subjects: [
+            SubjectOption(name: "Mathematics"),
+            SubjectOption(name: "Combined Science"),
+            SubjectOption(name: "English")
+        ],
+        classes: [
+            ClassOption(name: "Form 1"),
+            ClassOption(name: "Form 2"),
+            ClassOption(name: "Form 3")
+        ]
+    )
+
+    return SchoolCreationView(
+        headName: "Dr. Mthusi",
+        headEmail: "mthusi@studyarena.co.zw",
+        schoolDraft: $sampleDraft
+    )
+    .environment(SupabaseService.shared)
 }

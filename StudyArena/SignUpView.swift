@@ -26,6 +26,13 @@ struct SignUpView: View {
     
     // Role selection state
     @State private var selectedRole: AppRole = .student
+    
+    // MARK: - Role-Based Navigation States
+    @State private var showCreateSchoolPage = false
+    @State private var showStudentOnboarding = false
+    @State private var showTeacherOnboarding = false
+    @State private var schoolDraft = SchoolDraft()
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -200,11 +207,27 @@ struct SignUpView: View {
                     .padding(.bottom, 30)
                 }
             }
-            // Attached alert modifier so warnings actually display on screen
+            // Attached alert modifier so warnings display on screen
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(alertMessage)
+            }
+            // MARK: - Role-Based Navigation Destinations
+            .navigationDestination(isPresented: $showCreateSchoolPage) {
+                SchoolCreationView(
+                    headName: username,
+                    headEmail: email,
+                    schoolDraft: $schoolDraft
+                )
+            }
+            .navigationDestination(isPresented: $showTeacherOnboarding) {
+                // Replace with your TeacherOnboardingView if available
+                Text("Teacher Onboarding")
+            }
+            .navigationDestination(isPresented: $showStudentOnboarding) {
+                // Replace with your StudentOnboardingView if available
+                Text("Student Onboarding")
             }
         }
     }
@@ -241,7 +264,6 @@ struct SignUpView: View {
             return
         }
         
-        // EDITED: Updated validation check to reflect complex password rules
         guard isPasswordValid else {
             showWarning("Weak Password", "Password must have at least 8 characters, including one uppercase letter, one lowercase letter, one number, and one special character.")
             return
@@ -252,7 +274,6 @@ struct SignUpView: View {
             return
         }
         
-        // EDITED: Updated warning message to match exact user requirement
         guard doPasswordsMatch else {
             showWarning("Passwords Do Not Match", "Passwords do not match. Please try again.")
             return
@@ -263,20 +284,13 @@ struct SignUpView: View {
             return
         }
         
-        // Perform successful sign up actions here
         executeSignUp()
     }
     
     private func executeSignUp() {
-        isLoading = true
-        
-        // Simulate local registration process (passwords are handled securely via SecureField and never logged/stored in plain text)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isLoading = false
-            // Add navigation or success handling here
-            createAccount()
-        }
+        createAccount()
     }
+
     // MARK: - LINKS SUPABASE AND THE UI
     @MainActor
     private func createAccount() {
@@ -296,19 +310,26 @@ struct SignUpView: View {
                     role: roleValue
                 )
                 
-                // Navigate to role-specific onboarding
-                
+                // Triggers role-specific navigation upon successful sign up
+                switch selectedRole {
+                case .schoolHead:
+                    showCreateSchoolPage = true
+                case .teacher:
+                    showTeacherOnboarding = true
+                case .student:
+                    showStudentOnboarding = true
+                }
             } catch {
                 showWarning("Sign Up Failed", error.localizedDescription)
             }
         }
     }
+
     private func isValidEmail(_ email: String) -> Bool {
         let pattern = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: email)
     }
     
-    // EDITED: Updated password validation computed property to enforce 8+ chars, upper, lower, number, and special character via regex
     private var isPasswordValid: Bool {
         let passwordRegex = "^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$"
         return NSPredicate(format: "SELF MATCHES %@", passwordRegex).evaluate(with: password)
@@ -343,6 +364,7 @@ enum AppRole: String, CaseIterable, Identifiable {
         case .schoolHead: return "person.badge.shield.checkmark.fill"
         }
     }
+    
     var databaseRoleValue: String {
         switch self {
         case .student:
@@ -350,11 +372,10 @@ enum AppRole: String, CaseIterable, Identifiable {
         case .teacher:
             return "teacher"
         case .schoolHead:
-            return "school_head" // Ensure this matches your Postgres check constraint ('school_head' or 'head')
+            return "school_head"
         }
     }
 }
-
 
 // MARK: - Role Picker Button Component
 struct RolePickerButton: View {
@@ -463,7 +484,6 @@ struct CustomSecureField: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                 } else {
-                    // EDITED: Utilizes SecureField to ensure password values are never logged or stored in plain text on screen
                     SecureField("", text: $text, prompt: Text(placeholder).foregroundColor(.secondaryText))
                         .foregroundColor(.text)
                         .font(.system(size: 14))
